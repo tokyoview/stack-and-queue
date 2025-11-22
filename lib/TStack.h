@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <algorithm>
 
 template <typename T>
 class TStack
@@ -8,6 +9,7 @@ private:
   size_t capacity;
   size_t end;
   T* data;
+  //bool isRepacked;
 
 public:
   TStack();
@@ -25,8 +27,14 @@ public:
   bool IsEmpty();
   bool IsFull();
   int GetCapacity();
+  void SetCapacity(int cap);
+  int GetEnd();
+  void SetEnd(int newEnd);
+  //void Repacked();
 
   T MinElement();
+
+  void SetData(T** target);
 
   template<typename O>
   friend std::ostream& operator<<(std::ostream& os, const TStack<O>& q);
@@ -38,6 +46,7 @@ inline TStack<T>::TStack()
   capacity = 0;
   end = 0;
   data = nullptr;
+  //isRepacked = false;
 }
 
 template<typename T>
@@ -48,6 +57,7 @@ inline TStack<T>::TStack(int size)
   capacity = size;
   end = 0;
   data = new T[capacity]{0};
+  //isRepacked = false;
 }
 
 template<typename T>
@@ -58,6 +68,7 @@ inline TStack<T>::TStack(const TStack<T>& other)
   data = new T[capacity];
   for (int i = 0; i < end; ++i)
     data[i] = other.data[i];
+  //isRepacked = other.isRepacked;
 }
 
 template<typename T>
@@ -66,16 +77,18 @@ inline TStack<T>::TStack(TStack<T>&& other)
   capacity = other.capacity;
   end = other.end;
   data = other.data;
+  //isRepacked = other.isRepacked;
   other.capacity = 0;
   other.end = 0;
   other.data = nullptr;
+  //other.isRepacked = false;
 }
 
 template<typename T>
 inline TStack<T>::~TStack()
 {
   if (data != nullptr)
-    delete data;
+    delete[] data;
 }
 
 template<typename T>
@@ -87,7 +100,7 @@ inline TStack<T>& TStack<T>::operator=(const TStack<T>& other)
   capacity = other.capacity;
   end = other.end;
 
-  if (data != nullptr) delete data;
+  if (data != nullptr) delete[] data;
   data = new T[capacity];
   for (int i = 0; i < end; ++i)
     data[i] = other.data[i];
@@ -125,10 +138,20 @@ template<typename T>
 inline void TStack<T>::Push(T value)
 {
   if (IsFull())
+  {
+    std::cout << "One Push" << std::endl;
     throw "retard";
+  }
+  //std::cout << end << "\t" << value << std::endl;
   data[end++] = value;
   //std::cout << "end, val: " << end << "\t" << value << std::endl;
 }
+
+/* template<typename T>
+inline void TStack<T>::Repacked()
+{
+  isRepacked = true;
+} */
 
 template<typename T>
 inline void TStack<T>::Pop()
@@ -157,6 +180,11 @@ inline bool TStack<T>::IsEmpty()
 template<typename T>
 inline bool TStack<T>::IsFull()
 {
+  /* for (int i = 0; i < end; ++i)
+    if (data[i] != 0)
+      return (end == capacity);
+  return false; */
+  //return (!isRepacked && (end == capacity)) || (isRepacked && end > capacity);
   return (end == capacity);
 }
 
@@ -164,6 +192,26 @@ template<typename T>
 inline int TStack<T>::GetCapacity()
 {
   return capacity;
+}
+
+template<typename T>
+inline int TStack<T>::GetEnd()
+{
+  return end;
+}
+
+template<typename T>
+inline void TStack<T>::SetEnd(int newEnd)
+{
+  end = newEnd;
+}
+
+template<typename T>
+inline void TStack<T>::SetCapacity(int cap)
+{
+  if (!IsEmpty())
+    return;
+  capacity = cap;
 }
 
 template<typename T>
@@ -178,6 +226,32 @@ inline T TStack<T>::MinElement()
 }
 
 template<typename T>
+inline void TStack<T>::SetData(T **target)
+{
+  int cnt = 0;
+  for (int i = 0; i < capacity; ++i)
+    cnt += (*target)[i];
+
+  if (data != nullptr)
+    delete[] data;
+  end = 0;
+  data = new T[capacity];
+  for (int i = 0; i < capacity; ++i)
+  {
+    if ((*target)[i] == 0) break;
+    this->Push((*target)[i]);
+  }
+  /* for (T &i: target)
+    this->Push(i); */
+  /* for (auto i = *target; i != *target+capacity*sizeof(T); i+=sizeof(T))
+    this->Push(i[0]); */
+
+  //std::for_each_n(*target, capacity, [](auto& n) { Push(n); });
+  if (cnt == 0) // если присвоили массив нулей, то по сути и нет ничего
+    end = 0;
+}
+
+template<typename T>
 inline std::ostream& operator<<(std::ostream& os, const TStack<T>& q)
 {
   using std::endl;
@@ -186,7 +260,7 @@ inline std::ostream& operator<<(std::ostream& os, const TStack<T>& q)
     os << "nothing to print";
     return os;
   }
-  os << "Size of stack: " << q.capacity << endl;
+  os << "Size of stack: " << q.capacity << "\t";
   os << "End: " << q.end << endl;
   for (int i  = 0; i < q.end; ++i)
     os << q.data[i] << "\t";
